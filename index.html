@@ -1,0 +1,1817 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Первые шаги в Go — интерактивная презентация</title>
+<style>
+/* ============ БАЗА ============ */
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%;overflow:hidden}
+body{
+  background:#1e1e1e;color:#d4d4d4;
+  font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:17px;line-height:1.62;-webkit-text-size-adjust:100%;
+}
+code,pre,.chip,.mono{font-family:"Cascadia Code","Consolas","SF Mono",Menlo,"Courier New",monospace}
+button{font-family:inherit}
+h1,h2,h3,h4{line-height:1.25;margin:0 0 14px;color:#f0f0f0;font-weight:600}
+h1{font-size:clamp(30px,5.4vw,50px);letter-spacing:-.5px}
+h2{font-size:clamp(23px,3.4vw,32px);color:#4ec9b0}
+h3{font-size:20px;color:#e8e8e8}
+h4{font-size:18px;margin:0}
+p{margin:0 0 14px}
+a{color:#4ec9b0}
+small{font-size:14px;color:#9d9d9d}
+ul,ol{margin:0 0 16px;padding-left:24px}
+li{margin-bottom:9px}
+strong{color:#fff}
+.accent{color:#4ec9b0}
+.muted{color:#9d9d9d}
+
+/* ============ КАРКАС ============ */
+.app{height:100%;display:flex;flex-direction:column}
+.topbar{
+  flex:0 0 auto;background:#252526;border-bottom:1px solid #333;
+  padding:10px clamp(12px,3vw,26px) 0;z-index:20;
+}
+.topbar-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;color:#e8e8e8;font-size:16px}
+.logo{
+  background:#00add8;color:#08222b;font-weight:700;border-radius:6px;
+  padding:2px 8px;font-size:14px;letter-spacing:.5px;font-family:"Cascadia Code",Consolas,monospace;
+}
+.progress-text{margin-left:auto;color:#9d9d9d;font-size:14px;white-space:nowrap}
+.progress-track{height:4px;background:#333;border-radius:2px;margin-top:10px;overflow:hidden}
+.progress-fill{height:100%;width:0;background:#4ec9b0;border-radius:2px;transition:width .25s ease}
+
+.stage{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;padding:26px clamp(14px,4vw,50px) 110px;scroll-behavior:smooth}
+.slide{display:none;max-width:1040px;margin:0 auto}
+.slide.active{display:block}
+.slide-head{margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid #333}
+.slide-head .kicker{color:#9d9d9d;font-size:14px;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px}
+
+/* ============ НАВИГАЦИЯ ============ */
+.navbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:30;
+  background:#252526;border-top:1px solid #333;
+  display:flex;align-items:center;gap:12px;
+  padding:10px clamp(10px,3vw,22px);
+}
+.nav-btn{
+  background:#2d2d2d;color:#d4d4d4;border:1px solid #3c3c3c;border-radius:8px;
+  padding:10px 18px;font-size:16px;cursor:pointer;white-space:nowrap;
+  transition:background .15s ease,border-color .15s ease,color .15s ease;
+}
+.nav-btn:hover:not(:disabled){background:#37373d;border-color:#4ec9b0;color:#fff}
+.nav-btn:disabled{opacity:.35;cursor:not-allowed}
+.nav-btn.primary{background:#0e639c;border-color:#1177bb;color:#fff}
+.nav-btn.primary:hover:not(:disabled){background:#1177bb}
+.dots{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;flex:1}
+.dot{
+  width:11px;height:11px;border-radius:50%;border:1px solid #555;
+  background:#3c3c3c;cursor:pointer;padding:0;transition:background .15s ease,transform .15s ease;
+}
+.dot:hover{background:#6a6a6a}
+.dot.active{background:#4ec9b0;border-color:#4ec9b0;transform:scale(1.25)}
+
+/* ============ ПЛИТКИ / КАРТОЧКИ ============ */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin-bottom:20px}
+.card{
+  background:#252526;border:1px solid #333;border-left:3px solid #4ec9b0;
+  border-radius:10px;padding:18px;
+}
+.card .emoji{font-size:26px;display:block;margin-bottom:8px}
+.card h3{margin-bottom:6px;font-size:18px;color:#4ec9b0}
+.card p{margin:0;font-size:15.5px;color:#c8c8c8}
+
+.note{
+  background:#252526;border:1px solid #333;border-left:4px solid #dcdcaa;
+  border-radius:10px;padding:16px 18px;margin:18px 0;
+}
+.note.check{border-left-color:#4ec9b0;background:#22302d}
+.note.analogy{border-left-color:#c586c0;background:#2b2530}
+.note.warn{border-left-color:#f48771;background:#332523}
+.note .note-title{font-weight:700;color:#fff;margin-bottom:6px;display:block}
+.note p:last-child{margin-bottom:0}
+
+.steps{counter-reset:step;list-style:none;padding:0;margin:0 0 20px}
+.steps li{
+  position:relative;background:#252526;border:1px solid #333;border-radius:10px;
+  padding:14px 16px 14px 58px;margin-bottom:12px;
+}
+.steps li::before{
+  counter-increment:step;content:counter(step);
+  position:absolute;left:14px;top:14px;width:30px;height:30px;border-radius:50%;
+  background:#0e639c;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:16px;
+}
+.steps kbd,.kbd{
+  background:#3c3c3c;border:1px solid #555;border-bottom-width:2px;border-radius:5px;
+  padding:1px 7px;font-size:14px;font-family:"Cascadia Code",Consolas,monospace;color:#fff;white-space:nowrap;
+}
+
+/* ============ БЛОКИ КОДА ============ */
+.code-block{
+  background:#2d2d2d;border:1px solid #3c3c3c;border-left:4px solid #00add8;
+  border-radius:10px;margin:0 0 18px;overflow:hidden;
+}
+.code-block.lang-py{border-left-color:#4b8bbe;background:#2b2b30}
+.code-block.term{border-left-color:#6a9955;background:#26282a}
+.code-head{
+  display:flex;align-items:center;gap:10px;
+  background:#252526;border-bottom:1px solid #3c3c3c;padding:7px 12px;
+}
+.lang-label{font-size:13px;font-weight:700;letter-spacing:.6px;color:#00add8;text-transform:uppercase}
+.code-block.lang-py .lang-label{color:#7aa7d6}
+.code-block.term .lang-label{color:#8ec07c}
+.copy-btn{
+  margin-left:auto;background:#2d2d2d;border:1px solid #454545;color:#c8c8c8;
+  border-radius:6px;padding:4px 11px;font-size:13.5px;cursor:pointer;
+  transition:background .15s ease,color .15s ease,border-color .15s ease;
+}
+.copy-btn:hover{background:#37373d;color:#fff;border-color:#4ec9b0}
+.copy-btn.copied{background:#22462f;border-color:#4ec9b0;color:#4ec9b0}
+.code-block pre{
+  margin:0;padding:14px 16px;overflow-x:auto;font-size:15.5px;line-height:1.6;
+  color:#d4d4d4;white-space:pre;
+}
+.code-block.term pre{color:#cfe8c0}
+/* подсветка синтаксиса */
+.kw{color:#569cd6}
+.code-block.lang-py .kw{color:#c586c0}
+.kw2{color:#c586c0}
+.str{color:#ce9178}
+.com{color:#6a9955;font-style:italic}
+.fn{color:#dcdcaa}
+.num{color:#b5cea8}
+.typ{color:#4ec9b0}
+.err{color:#f48771}
+.ok{color:#4ec9b0}
+
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.duo .col-title{font-size:14px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;color:#9d9d9d}
+.duo .col-title.bad{color:#f48771}
+.duo .col-title.good{color:#4ec9b0}
+
+/* ============ ТАБЛИЦЫ ============ */
+.table-scroll{overflow-x:auto;margin-bottom:20px;border:1px solid #333;border-radius:10px}
+table.compare{width:100%;min-width:720px;border-collapse:collapse;background:#252526}
+table.compare th{
+  background:#2d2d30;color:#4ec9b0;text-align:left;font-size:14px;text-transform:uppercase;letter-spacing:.8px;
+  padding:12px 14px;border-bottom:2px solid #3c3c3c;
+}
+table.compare th.py-h{color:#7aa7d6}
+table.compare td{padding:13px 14px;border-bottom:1px solid #333;vertical-align:middle;font-size:15.5px}
+table.compare tr:last-child td{border-bottom:none}
+table.compare tr:nth-child(even) td{background:#28282c}
+td.child{color:#e0d9c8;font-style:italic}
+.chip{
+  display:inline-block;background:#2d2d2d;border:1px solid #3c3c3c;border-radius:6px;
+  padding:3px 9px;font-size:14.5px;white-space:nowrap;color:#d4d4d4;
+}
+.chip.py{border-left:3px solid #4b8bbe;background:#2b2b30}
+.chip.go{border-left:3px solid #00add8}
+.chip.none{color:#6a6a6a;border-style:dashed;font-style:italic}
+
+/* таблица построчного разбора */
+table.lines{width:100%;min-width:600px;border-collapse:collapse;background:#252526}
+table.lines th{background:#2d2d30;color:#4ec9b0;text-align:left;padding:11px 14px;font-size:14px;text-transform:uppercase;letter-spacing:.8px;border-bottom:2px solid #3c3c3c}
+table.lines td{padding:11px 14px;border-bottom:1px solid #333;vertical-align:middle;font-size:15.5px}
+table.lines td.code-cell{width:44%}
+table.lines tr:last-child td{border-bottom:none}
+
+/* ============ РАСКРЫВАШКИ ============ */
+.reveal{margin-bottom:12px}
+.reveal-toggle{
+  display:flex;align-items:center;gap:8px;width:100%;text-align:left;
+  background:#2d2d2d;border:1px solid #3c3c3c;border-left:3px solid #dcdcaa;
+  color:#dcdcaa;border-radius:8px;padding:11px 15px;font-size:15.5px;font-weight:600;cursor:pointer;
+  transition:background .15s ease,border-color .15s ease;
+}
+.reveal-toggle:hover{background:#37373d}
+.reveal-toggle.sol{border-left-color:#4ec9b0;color:#4ec9b0}
+.reveal-toggle .caret{margin-left:auto;transition:transform .3s ease;font-size:13px}
+.reveal-toggle.open .caret{transform:rotate(180deg)}
+.reveal-body{max-height:0;overflow:hidden;transition:max-height .35s ease}
+.reveal-inner{padding:14px 15px;background:#252526;border:1px solid #333;border-top:none;border-radius:0 0 8px 8px}
+.reveal-inner p:last-child{margin-bottom:0}
+.reveal-inner .code-block:last-child{margin-bottom:0}
+
+/* ============ ЗАДАЧИ ============ */
+.tasks{display:grid;grid-template-columns:1fr;gap:16px}
+.task{background:#252526;border:1px solid #333;border-radius:12px;padding:18px}
+.task-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px}
+.task-num{
+  flex:0 0 auto;width:34px;height:34px;border-radius:9px;background:#0e639c;color:#fff;
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;
+}
+.task h4{color:#f0f0f0}
+.stars{color:#dcdcaa;font-size:14px;letter-spacing:1px;white-space:nowrap}
+.task-text{margin:0 0 14px;color:#c8c8c8;font-size:15.5px}
+.level-badge{
+  display:inline-block;background:#37373d;color:#4ec9b0;border-radius:20px;
+  padding:3px 14px;font-size:13.5px;font-weight:700;letter-spacing:.6px;margin-bottom:10px;
+}
+
+/* меню тренажёра */
+.task-menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.task-link{
+  display:flex;align-items:center;gap:10px;background:#2d2d2d;border:1px solid #3c3c3c;
+  border-radius:9px;padding:12px 14px;cursor:pointer;text-align:left;color:#d4d4d4;font-size:15px;
+  transition:border-color .15s ease,background .15s ease;
+}
+.task-link:hover{border-color:#4ec9b0;background:#333}
+.task-link .n{
+  flex:0 0 auto;width:26px;height:26px;border-radius:7px;background:#37373d;color:#4ec9b0;
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13.5px;
+}
+.task-link .t{flex:1}
+.task-link .s{font-size:12.5px;color:#dcdcaa}
+
+/* ============ СХЕМА (слайд 4) ============ */
+.schema{
+  display:flex;align-items:stretch;justify-content:center;gap:10px;flex-wrap:wrap;
+  background:#252526;border:1px solid #333;border-radius:12px;padding:22px 16px;margin:20px 0;
+}
+.schema-box{
+  flex:1 1 140px;min-width:140px;max-width:200px;text-align:center;border-radius:10px;
+  padding:16px 12px;font-weight:700;color:#fff;font-size:16px;border:1px solid #3c3c3c;
+}
+.schema-box small{display:block;font-weight:400;color:#d4d4d4;margin-top:5px;font-size:13.5px}
+.schema-box.vs{background:#0e639c}
+.schema-box.ext{background:#4b3a72}
+.schema-box.gol{background:#00758d}
+.schema-box.result{background:#22462f;border-color:#4ec9b0;color:#4ec9b0}
+.schema-op{align-self:center;font-size:26px;color:#9d9d9d;font-weight:700}
+
+/* ============ ТИТУЛ ============ */
+.title-wrap{text-align:center;padding:clamp(20px,7vh,70px) 10px}
+.title-badge{
+  width:96px;height:96px;margin:0 auto 22px;border-radius:22px;background:#00add8;
+  color:#08222b;font-size:44px;font-weight:700;display:flex;align-items:center;justify-content:center;
+  font-family:"Cascadia Code",Consolas,monospace;
+}
+.subtitle{font-size:clamp(17px,2.4vw,23px);color:#c8c8c8;max-width:640px;margin:0 auto 10px}
+.meta{color:#9d9d9d;font-size:15px;letter-spacing:.4px;margin-bottom:30px}
+.btn-primary{
+  background:#0e639c;border:1px solid #1177bb;color:#fff;border-radius:10px;
+  padding:14px 34px;font-size:18px;font-weight:600;cursor:pointer;
+  transition:background .15s ease,transform .15s ease;
+}
+.btn-primary:hover{background:#1177bb;transform:translateY(-2px)}
+.btn-ghost{
+  background:#2d2d2d;border:1px solid #4ec9b0;color:#4ec9b0;border-radius:10px;
+  padding:12px 26px;font-size:16.5px;font-weight:600;cursor:pointer;transition:background .15s ease;
+}
+.btn-ghost:hover{background:#22302d}
+
+/* ============ ВИКТОРИНА ============ */
+.quiz{background:#252526;border:1px solid #333;border-radius:12px;padding:18px;margin-bottom:18px}
+.quiz-q{font-weight:600;color:#fff;font-size:17px;margin-bottom:14px}
+.quiz-opts{display:grid;gap:10px}
+.quiz-opt{
+  background:#2d2d2d;border:1px solid #3c3c3c;border-radius:9px;color:#d4d4d4;
+  padding:12px 15px;font-size:15.5px;text-align:left;cursor:pointer;
+  transition:background .15s ease,border-color .15s ease,color .15s ease;
+}
+.quiz-opt:hover:not(:disabled){border-color:#4ec9b0;background:#333}
+.quiz-opt.right{background:#22462f;border-color:#4ec9b0;color:#4ec9b0;font-weight:600}
+.quiz-opt.wrong{background:#4a2622;border-color:#f48771;color:#f48771}
+.quiz-opt:disabled{cursor:default;opacity:.85}
+.quiz-feedback{display:none;margin-top:13px;padding:11px 14px;border-radius:8px;font-size:15px}
+.quiz-feedback.show{display:block}
+.quiz-feedback.ok{background:#22302d;border:1px solid #4ec9b0;color:#bfe8dd}
+.quiz-feedback.bad{background:#332523;border:1px solid #f48771;color:#f2c9c1}
+
+/* ============ ЧЕК-ЛИСТ ============ */
+.checklist{display:grid;gap:10px;margin-bottom:20px}
+.check-item{
+  display:flex;align-items:center;gap:12px;background:#252526;border:1px solid #333;
+  border-radius:10px;padding:13px 16px;cursor:pointer;text-align:left;color:#d4d4d4;font-size:16px;
+  transition:border-color .15s ease,background .15s ease;
+}
+.check-item:hover{border-color:#4ec9b0}
+.check-item .box{
+  flex:0 0 auto;width:24px;height:24px;border-radius:6px;border:2px solid #555;
+  display:flex;align-items:center;justify-content:center;font-size:15px;color:transparent;
+}
+.check-item.checked{background:#22302d;border-color:#4ec9b0;color:#fff}
+.check-item.checked .box{background:#4ec9b0;border-color:#4ec9b0;color:#12241f}
+.check-counter{color:#9d9d9d;font-size:15px;margin-bottom:16px}
+
+.next-topic{
+  background:linear-gradient(135deg,#252526,#22302d);border:1px solid #3c3c3c;
+  border-radius:12px;padding:20px;margin-bottom:20px;
+}
+
+/* ============ АДАПТИВ ============ */
+@media (max-width:860px){
+  body{font-size:16px}
+  .duo{grid-template-columns:1fr}
+  .stage{padding-bottom:130px}
+  .schema-op{transform:rotate(90deg)}
+  .schema{flex-direction:column;align-items:center}
+  .schema-box{max-width:100%;width:100%;flex:0 0 auto}
+}
+@media (max-width:620px){
+  .topbar-row{gap:8px}
+  .brand span.txt{display:none}
+  .progress-text{font-size:13px}
+  .navbar{flex-direction:column-reverse;gap:9px;padding:9px 12px}
+  .dots{width:100%;gap:6px}
+  .dot{width:10px;height:10px}
+  .nav-row{display:flex;gap:10px;width:100%}
+  .nav-btn{flex:1;padding:11px 10px;font-size:15px}
+  .stage{padding-bottom:150px}
+  .card{padding:15px}
+  .task{padding:15px}
+  table.compare td,table.compare th{padding:11px 10px;font-size:14.5px}
+  .chip{font-size:13.5px;padding:2px 7px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ================= ШАПКА ================= -->
+  <header class="topbar">
+    <div class="topbar-row">
+      <div class="brand"><span class="logo">Go</span><span class="txt">Первые шаги в Go</span></div>
+      <div class="progress-text" id="progressText">Слайд 1 из 18</div>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  </header>
+
+  <!-- ================= СЛАЙДЫ ================= -->
+  <main class="stage" id="stage">
+
+    <!-- ========== СЛАЙД 1 ========== -->
+    <section class="slide active" data-title="Титул">
+      <div class="title-wrap">
+        <div class="title-badge">Go</div>
+        <h1>Первые шаги в Go</h1>
+        <p class="subtitle">Ты уже знаешь Python — теперь научишься Go</p>
+        <p class="meta">Установка&nbsp;· Инструменты&nbsp;· Первые команды&nbsp;· 12 задач&nbsp;· Викторина</p>
+        <button class="btn-primary" id="startBtn" type="button">Начать 🚀</button>
+        <p style="margin-top:26px"><small>Листай кнопками внизу или стрелками ← → на клавиатуре</small></p>
+      </div>
+    </section>
+
+    <!-- ========== СЛАЙД 2 ========== -->
+    <section class="slide" data-title="Зачем нужен Go">
+      <div class="slide-head">
+        <div class="kicker">Слайд 2 · Мотивация</div>
+        <h2>Зачем нужен Go?</h2>
+      </div>
+      <p>Go (или <strong>Golang</strong>) придумали в Google в 2009 году три очень уважаемых программиста. Они хотели язык, который <strong>простой как Python</strong>, но <strong>быстрый как C</strong>. Вот 4 главные причины его выучить:</p>
+      <div class="cards">
+        <div class="card">
+          <span class="emoji">⚡</span>
+          <h3>Быстрый как C</h3>
+          <p>Go компилируется сразу в машинный код. Программа не «переводится на лету», как в Python, поэтому работает в разы быстрее.</p>
+        </div>
+        <div class="card">
+          <span class="emoji">🧩</span>
+          <h3>Простой синтаксис</h3>
+          <p>Всего 25 ключевых слов. Если ты знаешь переменные, циклы и функции из Python — ты уже понимаешь 80% Go.</p>
+        </div>
+        <div class="card">
+          <span class="emoji">🔀</span>
+          <h3>Встроенная параллельность</h3>
+          <p>Горутины — это мини-потоки, которые пишутся одним словом <span class="chip go">go</span>. Программа может делать 100 дел одновременно.</p>
+        </div>
+        <div class="card">
+          <span class="emoji">💼</span>
+          <h3>Востребован в компаниях</h3>
+          <p>Docker, Kubernetes, Twitch, Ozon, VK, Wildberries — серверы и сервисы этих компаний написаны на Go.</p>
+        </div>
+      </div>
+      <div class="note analogy">
+        <span class="note-title">🛴 Аналогия, которую стоит запомнить</span>
+        <p><strong>Python — это самокат:</strong> удобно, легко научиться, быстро поехал по двору.</p>
+        <p><strong>Go — это электросамокат с мотором:</strong> рулить так же просто (почти те же команды), но едет заметно быстрее и везёт тебя дальше — например, на нём уже можно делать настоящие серверы и приложения.</p>
+      </div>
+    </section>
+
+    <!-- ========== СЛАЙД 3 ========== -->
+    <section class="slide" data-title="Установка Go">
+      <div class="slide-head">
+        <div class="kicker">Слайд 3 · Установка</div>
+        <h2>Установка Go за 5 шагов (Windows)</h2>
+      </div>
+      <ol class="steps">
+        <li>Зайди на официальный сайт <strong>go.dev/dl</strong> — там лежат все свежие версии.</li>
+        <li>Скачай установщик для Windows с расширением <span class="chip go">.msi</span> (например <span class="chip go">go1.22.0.windows-amd64.msi</span>).</li>
+        <li>Запусти скачанный файл и просто нажимай <strong>«Next» → «Install» → «Finish»</strong>. Все настройки оставляй по умолчанию — Go сам пропишет себя в систему.</li>
+        <li>Открой терминал: нажми <span class="kbd">Win</span> + <span class="kbd">R</span>, набери <span class="chip">cmd</span> и нажми <span class="kbd">Enter</span>.</li>
+        <li>Проверь, что всё получилось, командой <span class="chip go">go version</span>.</li>
+      </ol>
+
+      <div class="code-block term">
+        <div class="code-head"><span class="lang-label">Терминал (cmd)</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+        <pre>C:\Users\Uchenik&gt; go version
+go version go1.22.0 windows/amd64</pre>
+      </div>
+
+      <div class="note check">
+        <span class="note-title">✅ Проверь себя</span>
+        <p>В терминале должна появиться строка вида <span class="chip go">go version go1.22.x windows/amd64</span>. Номер версии может отличаться — это нормально, главное, что он есть.</p>
+        <p>Если вместо этого написано <span class="chip">«go» не является внутренней или внешней командой</span> — просто <strong>закрой окно терминала и открой новое</strong>. Windows не всегда сразу «видит» свежую программу.</p>
+      </div>
+
+      <div class="reveal">
+        <button class="reveal-toggle" type="button">🖥️ У меня macOS или Linux — показать инструкцию<span class="caret">▼</span></button>
+        <div class="reveal-body"><div class="reveal-inner">
+          <p><strong>macOS:</strong> скачай файл <span class="chip">.pkg</span> с go.dev/dl и установи двойным кликом. Или, если есть Homebrew, выполни:</p>
+          <div class="code-block term">
+            <div class="code-head"><span class="lang-label">Терминал (macOS)</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+            <pre>brew install go
+go version</pre>
+          </div>
+          <p><strong>Linux:</strong> скачай архив <span class="chip">.tar.gz</span> с go.dev/dl и распакуй его в <span class="chip">/usr/local</span>, затем добавь путь в переменную PATH:</p>
+          <div class="code-block term">
+            <div class="code-head"><span class="lang-label">Терминал (Linux)</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+            <pre>sudo tar -C /usr/local -xzf go1.22.0.linux-amd64.tar.gz
+export PATH=$PATH:/usr/local/go/bin
+go version</pre>
+          </div>
+        </div></div>
+      </div>
+    </section>
+
+    <!-- ========== СЛАЙД 4 ========== -->
+    <section class="slide" data-title="VS Code + Go">
+      <div class="slide-head">
+        <div class="kicker">Слайд 4 · Инструменты</div>
+        <h2>Установка VS Code и расширения Go</h2>
+      </div>
+      <p>Go можно писать даже в «Блокноте», но с хорошим редактором программировать в 10 раз приятнее. Мы возьмём <strong>VS Code</strong> — он бесплатный, как и сам Go.</p>
+      <ol class="steps">
+        <li>Зайди на <strong>code.visualstudio.com</strong>, скачай VS Code и установи (снова просто жмём «Next»).</li>
+        <li>Открой VS Code.</li>
+        <li>Слева на панели нажми значок из четырёх квадратиков — это вкладка <strong>Extensions</strong>. Горячая клавиша: <span class="kbd">Ctrl</span>+<span class="kbd">Shift</span>+<span class="kbd">X</span>.</li>
+        <li>В строке поиска набери <span class="chip">Go</span>.</li>
+        <li>Найди расширение <strong>«Go» от «Go Team at Google»</strong> (у него миллионы установок) и нажми <strong>Install</strong>.</li>
+        <li>Создай файл <span class="chip go">hello.go</span> и открой его. VS Code покажет окошко <em>«Tools for Go are missing»</em> — нажми <strong>Install All</strong> и подожди пару минут, пока скачаются помощники.</li>
+      </ol>
+
+      <div class="schema">
+        <div class="schema-box vs">VS Code<small>редактор кода</small></div>
+        <span class="schema-op">+</span>
+        <div class="schema-box ext">Расширение Go<small>подсветка, подсказки, автоформат</small></div>
+        <span class="schema-op">+</span>
+        <div class="schema-box gol">Сам Go<small>компилятор и команды</small></div>
+        <span class="schema-op">=</span>
+        <div class="schema-box result">Готовая студия 🎛️<small>пиши, запускай, собирай</small></div>
+      </div>
+
+      <div class="note check">
+        <span class="note-title">✅ Проверь себя</span>
+        <p>Открой любой файл <span class="chip go">.go</span>: код должен стать разноцветным, а при наборе <span class="chip go">fmt.</span> VS Code сам предложит продолжить слово. Внизу окна (в строке состояния) написано <strong>Go</strong>.</p>
+      </div>
+    </section>
+
+    <!-- ========== СЛАЙД 5 ========== -->
+    <section class="slide" data-title="hello.go">
+      <div class="slide-head">
+        <div class="kicker">Слайд 5 · Первая программа</div>
+        <h2>Первая программа: <span class="mono">hello.go</span></h2>
+      </div>
+      <p>Создай папку <span class="chip">go-projects</span>, в ней файл <span class="chip go">hello.go</span> и напиши ровно этот код:</p>
+
+      <div class="code-block lang-go">
+        <div class="code-head"><span class="lang-label">Go · hello.go</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+        <pre><span class="kw">package</span> main
+
+<span class="kw">import</span> <span class="str">"fmt"</span>
+
+<span class="kw">func</span> <span class="fn">main</span>() {
+    fmt.<span class="fn">Println</span>(<span class="str">"Привет, мир!"</span>)
+}</pre>
+      </div>
+
+      <h3>Разбор построчно</h3>
+      <div class="table-scroll">
+        <table class="lines">
+          <tr><th>Строка кода</th><th>Что она делает</th></tr>
+          <tr>
+            <td class="code-cell"><span class="chip go"><span class="kw">package</span> main</span></td>
+            <td>«Этот файл belongs к главному пакету». Пакет — это папка с родственным кодом. <span class="chip">main</span> означает: из этой программы можно сделать запускаемый файл.</td>
+          </tr>
+          <tr>
+            <td class="code-cell"><span class="chip go"><span class="kw">import</span> <span class="str">"fmt"</span></span></td>
+            <td>Подключаем «коробку с инструментами» <strong>fmt</strong> (format) — там живут функции для вывода текста на экран. Аналог <span class="chip py"><span class="kw">import</span> math</span> в Python.</td>
+          </tr>
+          <tr>
+            <td class="code-cell"><span class="chip go"><span class="kw">func</span> <span class="fn">main</span>() {</span></td>
+            <td>Объявляем функцию <strong>main</strong>. С неё <em>всегда</em> начинается выполнение любой Go-программы. Фигурная скобка открывает «тело» функции.</td>
+          </tr>
+          <tr>
+            <td class="code-cell"><span class="chip go">fmt.<span class="fn">Println</span>(<span class="str">"Привет, мир!"</span>)</span></td>
+            <td>Печатаем строку и переходим на новую линию (<strong>ln</strong> = line). Почти как <span class="chip py"><span class="fn">print</span>()</span> в Python, только с «фамилией» <span class="chip go">fmt.</span> перед именем.</td>
+          </tr>
+          <tr>
+            <td class="code-cell"><span class="chip go">}</span></td>
+            <td>Закрываем тело функции. Забыть эту скобку — ошибка №1 у всех новичков (мы про неё ещё поговорим).</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="note analogy">
+        <span class="note-title">🐍 Сравнение с Python</span>
+        <p>В Python тебе хватало одной строки <span class="chip py"><span class="fn">print</span>(<span class="str">"Привет"</span>)</span>, а Go требует «рамку» из <span class="chip go"><span class="kw">package</span></span> и <span class="chip go"><span class="kw">func</span> <span class="fn">main</span></span> — зато программа получается <strong>самостоятельным приложением</strong>, которое можно запустить даже на компьютере без установленного Python.</p>
+      </div>
+
+      <div class="code-block lang-py">
+        <div class="code-head"><span class="lang-label">Python · hello.py (для сравнения)</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+        <pre><span class="com"># весь код на Python — одна строка</span>
+<span class="fn">print</span>(<span class="str">"Привет, мир!"</span>)</pre>
+      </div>
+    </section>
+
+    <!-- ========== СЛАЙД 6 ========== -->
+    <section class="slide" data-title="go run">
+      <div class="slide-head">
+        <div class="kicker">Слайд 6 · Команда</div>
+        <h2>Команда <span class="mono accent">go run</span> — написать и сразу запустить</h2>
+      </div>
+      <p><span class="chip go">go run hello.go</span> делает два дела подряд:</p>
+      <ul>
+        <li><strong>компилирует</strong> твой код (переводит в понятный компьютеру машинный код) во временную папку;</li>
+        <li><strong>сразу запускает</strong> результат и показывает вывод в терминале;</li>
+        <li>потом временный файл <strong>тихо удаляет</strong> — в твоей папке ничего лишнего не остаётся.</li>
+      </ul>
+
+      <div class="code-block term">
+        <div class="code-head"><span class="lang-label">Терминал (cmd)</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+        <pre>C:\go-projects&gt; go run hello.go
+Привет, мир!
+
+C:\go-projects&gt;</pre>
+      </div>
+
+      <div class="note analogy">
+        <span class="note-title">🐍 Аналогия с Python</span>
+        <p>Это <strong>как <span class="chip py">python hello.py</span></strong> — написал и сразу работает. Идеальная команда для учёбы и проверки идей: поменял строчку → снова <span class="chip go">go run</span> → посмотрел результат.</p>
+      </div>
+
+      <div class="note warn">
+        <span class="note-title">⚠️ Частая ошибка</span>
+        <p>Команду нужно запускать <strong>в той же папке</strong>, где лежит файл. Перейти в папку: <span class="chip">cd C:\go-projects</span>. Если написать имя файла с ошибкой, Go ответит: <span class="chip err">stat hello.go: The system cannot find the file specified</span>.</p>
+      </div>
+    </section>
+
+    <!-- ========== СЛАЙД 7 ========== -->
+    <section class="slide" data-title="go build">
+      <div class="slide-head">
+        <div class="kicker">Слайд 7 · Команда</div>
+        <h2>Команда <span class="mono accent">go build</span> — собрать готовый файл</h2>
+      </div>
+      <p><span class="chip go">go build hello.go</span> <strong>ничего не печатает</strong> — она молча создаёт рядом настоящий исполняемый файл <span class="chip go">hello.exe</span>. Его можно:</p>
+      <ul>
+        <li>запустить двойным щелчком мыши;</li>
+        <li>отправить другу в мессенджере — и программа заработает <strong>без установленного Go</strong>;</li>
+        <li>положить на сервер, который работает 24/7.</li>
+      </ul>
+
+      <div class="code-block term">
+        <div class="code-head"><span class="lang-label">Терминал (cmd)</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+        <pre>C:\go-projects&gt; go build hello.go
+
+C:\go-projects&gt; dir hello.exe
+ Том в устройстве C имеет метку Windows
+26.03.2024  18:42         1 204 736 hello.exe
+
+C:\go-projects&gt; hello.exe
+Привет, мир!</pre>
+      </div>
+
+      <div class="note analogy">
+        <span class="note-title">🐍 Аналогия с Python</span>
+        <p>Python так не умеет «из коробки»: чтобы получить .exe, нужно ставить отдельные инструменты (pyinstaller, cx_Freeze) и писать сложные команды. <strong>Go делает это одной короткой командой.</strong></p>
+      </div>
+
+      <div class="note">
+        <span class="note-title">💡 Когда что использовать?</span>
+        <p><span class="chip go">go run</span> — пока пишешь и проверяешь код (быстро и удобно).<br>
+        <span class="chip go">go build</span> — когда программа готова и её пора запускать «по-взрослому» или отдавать другим людям.</p>
+      </div>
+    </section>
+
+    <!-- ========== СЛАЙД 8 ========== -->
+    <section class="slide" data-title="go fmt">
+      <div class="slide-head">
+        <div class="kicker">Слайд 8 · Команда</div>
+        <h2>Команда <span class="mono accent">go fmt</span> — робот-уборщик для кода</h2>
+      </div>
+      <p><span class="chip go">go fmt hello.go</span> автоматически расставляет отступы, пробелы и скобки <strong>по официальному стандарту Go</strong>. Тебе больше не нужно спорить, сколько пробелов ставить — за тебя всё решит команда.</p>
+
+      <div class="duo">
+        <div>
+          <div class="col-title bad">❌ ДО: кривой код</div>
+          <div class="code-block lang-go">
+            <div class="code-head"><span class="lang-label">Go · hello.go</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+            <pre><span class="kw">package</span> main
+<span class="kw">import</span> <span class="str">"fmt"</span>
+<span class="kw">func</span> <span class="fn">main</span>() {
+<span class="com">// печатаем приветствие</span>
+fmt.<span class="fn">Println</span>(<span class="str">"Привет"</span>)
+   x:=<span class="num">5</span>
+        <span class="kw">if</span> x&gt;<span class="num">3</span> {
+fmt.<span class="fn">Println</span>(<span class="str">"x больше 3"</span>)
+}
+}</pre>
+          </div>
+        </div>
+        <div>
+          <div class="col-title good">✅ ПОСЛЕ: go fmt</div>
+          <div class="code-block lang-go">
+            <div class="code-head"><span class="lang-label">Go · hello.go</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+            <pre><span class="kw">package</span> main
+
+<span class="kw">import</span> <span class="str">"fmt"</span>
+
+<span class="kw">func</span> <span class="fn">main</span>() {
+    <span class="com">// печатаем приветствие</span>
+    fmt.<span class="fn">Println</span>(<span class="str">"Привет"</span>)
+    x := <span class="num">5</span>
+    <span class="kw">if</span> x &gt; <span class="num">3</span> {
+        fmt.<span class="fn">Println</span>(<span class="str">"x больше 3"</span>)
+    }
+}</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="code-block term">
+        <div class="code-head"><span class="lang-label">Терминал (cmd)</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+        <pre>C:\go-projects&gt; go fmt hello.go
+hello.go</pre>
+      </div>
+
+      <div class="note analogy">
+        <span class="note-title">🤖 Аналогия</span>
+        <p>Представь <strong>робота-уборщика, который ровняет твой код по линейке</strong>: разбросанные детали он аккуратно складывает в ряды. Код становится одинаково красивым у всех программистов мира — поэтому чужие программы на Go так легко читать.</p>
+      </div>
+
+      <div class="note check">
+        <span class="note-title">✅ Совет для VS Code</span>
+        <p>В VS Code форматирование срабатывает <strong>само при сохранении</strong>: нажал <span class="kbd">Ctrl</span>+<span class="kbd">S</span> — и код уже ровный. Если этого не происходит, открой настройки (<span class="kbd">Ctrl</span>+<span class="kbd">,</span>), найди <span class="chip">Format On Save</span> и поставь галочку.</p>
+      </div>
+    </section>
+
+    <!-- ========== СЛАЙД 9 ========== -->
+    <section class="slide" data-title="Шпаргалка команд">
+      <div class="slide-head">
+        <div class="kicker">Слайд 9 · Шпаргалка</div>
+        <h2>Шпаргалка: терминал Go vs терминал Python</h2>
+      </div>
+      <p>Сохрани эту таблицу — она заменит тебе половину конспекта.</p>
+      <div class="table-scroll">
+        <table class="compare">
+          <tr><th class="py-h">Python</th><th>Go</th><th>Комментарий для ребёнка</th></tr>
+          <tr>
+            <td><span class="chip py">python hello.py</span></td>
+            <td><span class="chip go">go run hello.go</span></td>
+            <td class="child">«Запустить сразу: скомпилировал, показал результат, убрал за собой»</td>
+          </tr>
+          <tr>
+            <td><span class="chip py none">— (нет аналога)</span></td>
+            <td><span class="chip go">go build hello.go</span></td>
+            <td class="child">«Собрать .exe — готовую программу, которую можно отдать другу»</td>
+          </tr>
+          <tr>
+            <td><span class="chip py none">— (нет аналога)</span></td>
+            <td><span class="chip go">go fmt hello.go</span></td>
+            <td class="child">«Красиво отформатировать код — робот-уборщик в деле»</td>
+          </tr>
+          <tr>
+            <td><span class="chip py">python --version</span></td>
+            <td><span class="chip go">go version</span></td>
+            <td class="child">«Проверить установку: какая версия языка у меня стоит»</td>
+          </tr>
+          <tr>
+            <td><span class="chip py">pip install ...</span></td>
+            <td><span class="chip go">go get ...</span></td>
+            <td class="child">«Поставить чужую библиотеку. Подробно про go get поговорим позже»</td>
+          </tr>
+        </table>
+      </div>
+      <div class="note">
+        <span class="note-title">💡 Подсказка</span>
+        <p>В терминале нажми <span class="kbd">↑</span> (стрелка вверх) — команда из истории повторится, не нужно печатать заново. А <span class="kbd">Tab</span> дописывает имя файла за тебя.</p>
+      </div>
+    </section>
+
+    <!-- ========== СЛАЙД 10 ========== -->
+    <section class="slide" data-title="Синтаксис">
+      <div class="slide-head">
+        <div class="kicker">Слайд 10 · Синтаксис</div>
+        <h2>Синтаксис: Python vs Go</h2>
+      </div>
+      <div class="table-scroll">
+        <table class="compare">
+          <tr><th class="py-h">Python</th><th>Go</th><th>Комментарий для ребёнка</th></tr>
+          <tr>
+            <td><span class="chip py">x = <span class="num">5</span></span></td>
+            <td><span class="chip go">x := <span class="num">5</span></span></td>
+            <td class="child">«В Python тип угадывался на лету, в Go мы говорим компилятору один раз — и всё»</td>
+          </tr>
+          <tr>
+            <td><span class="chip py"><span class="fn">print</span>(<span class="str">"Привет"</span>)</span></td>
+            <td><span class="chip go">fmt.<span class="fn">Println</span>(<span class="str">"Привет"</span>)</span></td>
+            <td class="child">«Тот же print, только с фамилией fmt»</td>
+          </tr>
+          <tr>
+            <td><span class="chip py"><span class="kw">if</span> x &gt; <span class="num">0</span>:</span></td>
+            <td><span class="chip go"><span class="kw">if</span> x &gt; <span class="num">0</span> { ... }</span></td>
+            <td class="child">«Отступы больше не командуют — командуют фигурные скобки»</td>
+          </tr>
+          <tr>
+            <td><span class="chip py"><span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="num">5</span>):</span></td>
+            <td><span class="chip go"><span class="kw">for</span> i := <span class="num">0</span>; i &lt; <span class="num">5</span>; i++ {</span></td>
+            <td class="child">«range спрятался внутрь for: старт, условие, шаг»</td>
+          </tr>
+          <tr>
+            <td><span class="chip py"><span class="kw">while</span> x &gt; <span class="num">0</span>:</span></td>
+            <td><span class="chip go"><span class="kw">for</span> x &gt; <span class="num">0</span> {</span></td>
+            <td class="child">«while переодели в for — в Go вообще одно слово для всех циклов»</td>
+          </tr>
+          <tr>
+            <td><span class="chip py"><span class="fn">input</span>()</span></td>
+            <td><span class="chip go">fmt.<span class="fn">Scanln</span>(&amp;x)</span></td>
+            <td class="child">«Знак & — это „дай адрес переменной, чтобы записать туда ответ“»</td>
+          </tr>
+          <tr>
+            <td><span class="chip py"><span class="com"># комментарий</span></span></td>
+            <td><span class="chip go"><span class="com">// комментарий</span></span></td>
+            <td class="child">«Решётка стала двойным слэшем»</td>
+          </tr>
+        </table>
+      </div>
+      <div class="note analogy">
+        <span class="note-title">🐍 Главное отличие одной фразой</span>
+        <p>Python догадывается обо всём сам, а Go любит <strong>точность</strong>: ты явно пишешь типы и скобки — зато компилятор заранее поймает ошибку, а не программа упадёт у пользователя.</p>
+      </div>
+    </section>
+
+    <!-- ========== СЛАЙД 11 ========== -->
+    <section class="slide" data-title="Топ-3 ошибки">
+      <div class="slide-head">
+        <div class="kicker">Слайд 11 · Ошибки</div>
+        <h2>Три кита, на которых стоит ошибка новичка</h2>
+      </div>
+
+      <h3><span class="accent">1.</span> Забытая закрывающая скобка <span class="chip go">}</span></h3>
+      <p>И хорошая новость: <strong>точка с запятой в Go НЕ нужна</strong> — компилятор сам «доставляет» её в конце строки. А вот скобку закрыть обязан ты.</p>
+      <div class="duo">
+        <div>
+          <div class="col-title bad">❌ Неправильно</div>
+          <div class="code-block lang-go">
+            <div class="code-head"><span class="lang-label">Go</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+            <pre><span class="kw">func</span> <span class="fn">main</span>() {
+    fmt.<span class="fn">Println</span>(<span class="str">"Привет"</span>)
+<span class="com">// скобку } закрыть забыли!</span></pre>
+          </div>
+          <div class="code-block term">
+            <div class="code-head"><span class="lang-label">Ошибка</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+            <pre><span class="err">./hello.go:5:1: missing '}' in statement block</span></pre>
+          </div>
+        </div>
+        <div>
+          <div class="col-title good">✅ Правильно</div>
+          <div class="code-block lang-go">
+            <div class="code-head"><span class="lang-label">Go</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+            <pre><span class="kw">func</span> <span class="fn">main</span>() {
+    fmt.<span class="fn">Println</span>(<span class="str">"Привет"</span>)
+} <span class="com">// вот она, родная</span></pre>
+          </div>
+          <div class="note check" style="margin-top:0">
+            <p><strong>Приём:</strong> ставь <span class="chip go">{</span> и <span class="chip go">}</span> парой сразу, а потом пиши код между ними.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3><span class="accent">2.</span> Неиспользуемая переменная = ошибка компиляции</h3>
+      <p>Python просто «забыл» бы про неё, а Go строг: объявил — используй!</p>
+      <div class="duo">
+        <div>
+          <div class="col-title bad">❌ Неправильно</div>
+          <div class="code-block lang-go">
+            <div class="code-head"><span class="lang-label">Go</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+            <pre><span class="kw">func</span> <span class="fn">main</span>() {
+    name := <span class="str">"Аня"</span> <span class="com">// создали и... забыли</span>
+    fmt.<span class="fn">Println</span>(<span class="str">"Привет!"</span>)
+}</pre>
+          </div>
+          <div class="code-block term">
+            <div class="code-head"><span class="lang-label">Ошибка</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+            <pre><span class="err">./hello.go:4:6: "name" declared and not used</span></pre>
+          </div>
+        </div>
+        <div>
+          <div class="col-title good">✅ Правильно</div>
+          <div class="code-block lang-go">
+            <div class="code-head"><span class="lang-label">Go</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+            <pre><span class="kw">func</span> <span class="fn">main</span>() {
+    name := <span class="str">"Аня"</span>
+    fmt.<span class="fn">Println</span>(<span class="str">"Привет,"</span>, name)
+}</pre>
+          </div>
+          <div class="note" style="margin-top:0">
+            <p><strong>Лайфхак:</strong> если переменная нужна «на потом», используй её хотя бы так: <span class="chip go">_ = name</span>.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3><span class="accent">3.</span> Фигурная скобка <span class="chip go">{</span> перенесена на новую строку</h3>
+      <p>В Python так можно, в Go — <strong>нельзя</strong>. Скобка всегда живёт на той же строке, что и <span class="chip go">func</span> / <span class="chip go">if</span> / <span class="chip go">for</span>.</p>
+      <div class="duo">
+        <div>
+          <div class="col-title bad">❌ Неправильно</div>
+          <div class="code-block lang-go">
+            <div class="code-head"><span class="lang-label">Go</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+            <pre><span class="kw">func</span> <span class="fn">main</span>()
+{
+    fmt.<span class="fn">Println</span>(<span class="str">"Привет"</span>)
+}</pre>
+          </div>
+          <div class="code-block term">
+            <div class="code-head"><span class="lang-label">Ошибка</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+            <pre><span class="err">./hello.go:3:1: syntax error: unexpected semicolon or newline before {</span></pre>
+          </div>
+        </div>
+        <div>
+          <div class="col-title good">✅ Правильно</div>
+          <div class="code-block lang-go">
+            <div class="code-head"><span class="lang-label">Go</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+            <pre><span class="kw">func</span> <span class="fn">main</span>() {
+    fmt.<span class="fn">Println</span>(<span class="str">"Привет"</span>)
+}</pre>
+          </div>
+          <div class="note check" style="margin-top:0">
+            <p><strong>Запомни:</strong> «скобка прыгает наверх, к слову <span class="chip go">func</span>» — как хвостик у буквы.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== СЛАЙД 12 ========== -->
+    <section class="slide" data-title="Тренажёр">
+      <div class="slide-head">
+        <div class="kicker">Слайд 12 · Практика</div>
+        <h2>Тренажёр: 12 задач по возрастанию сложности</h2>
+      </div>
+      <p>Теперь самое интересное — практика! Задачи идут от совсем простых к серьёзным. В каждой карточке есть кнопки <strong>«💡 Показать подсказку»</strong> и <strong>«✅ Показать решение»</strong>. Сначала попробуй сам, потом подсматривай.</p>
+      <p><small>Нажми на задачу, чтобы сразу перейти к нужному слайду.</small></p>
+
+      <h3><span class="accent">Уровень 1</span> · <span class="stars">⭐</span> — разминка</h3>
+      <div class="task-menu" style="margin-bottom:22px">
+        <button class="task-link" type="button" data-goto="12" data-task="1"><span class="n">1</span><span class="t">«Привет, Go!»</span><span class="s">⭐</span></button>
+        <button class="task-link" type="button" data-goto="12" data-task="2"><span class="n">2</span><span class="t">«Сумма двух чисел»</span><span class="s">⭐</span></button>
+        <button class="task-link" type="button" data-goto="12" data-task="3"><span class="n">3</span><span class="t">«Привет, пользователь»</span><span class="s">⭐</span></button>
+        <button class="task-link" type="button" data-goto="12" data-task="4"><span class="n">4</span><span class="t">«Квадрат числа»</span><span class="s">⭐</span></button>
+      </div>
+
+      <h3><span class="accent">Уровень 2</span> · <span class="stars">⭐⭐</span> — уверенный пользователь</h3>
+      <div class="task-menu" style="margin-bottom:22px">
+        <button class="task-link" type="button" data-goto="13" data-task="5"><span class="n">5</span><span class="t">«Конвертер температур»</span><span class="s">⭐⭐</span></button>
+        <button class="task-link" type="button" data-goto="13" data-task="6"><span class="n">6</span><span class="t">«Чёт или нечёт»</span><span class="s">⭐⭐</span></button>
+        <button class="task-link" type="button" data-goto="13" data-task="7"><span class="n">7</span><span class="t">«Таблица умножения»</span><span class="s">⭐⭐</span></button>
+        <button class="task-link" type="button" data-goto="13" data-task="8"><span class="n">8</span><span class="t">«Средний балл»</span><span class="s">⭐⭐</span></button>
+      </div>
+
+      <h3><span class="accent">Уровень 3</span> · <span class="stars">⭐⭐⭐</span> — почти профи</h3>
+      <div class="task-menu">
+        <button class="task-link" type="button" data-goto="14" data-task="9"><span class="n">9</span><span class="t">«FizzBuzz»</span><span class="s">⭐⭐⭐</span></button>
+        <button class="task-link" type="button" data-goto="14" data-task="10"><span class="n">10</span><span class="t">«Угадай число»</span><span class="s">⭐⭐⭐</span></button>
+        <button class="task-link" type="button" data-goto="14" data-task="11"><span class="n">11</span><span class="t">«Перевёртыш»</span><span class="s">⭐⭐⭐</span></button>
+        <button class="task-link" type="button" data-goto="14" data-task="12"><span class="n">12</span><span class="t">«Калькулятор»</span><span class="s">⭐⭐⭐</span></button>
+      </div>
+
+      <div style="margin-top:26px;text-align:center">
+        <button class="btn-primary" type="button" data-goto="12">Перейти к уровню 1 →</button>
+      </div>
+    </section>
+
+    <!-- ========== СЛАЙД 13: УРОВЕНЬ 1 ========== -->
+    <section class="slide" data-title="Уровень 1">
+      <div class="slide-head">
+        <div class="kicker">Слайд 13 · Практика</div>
+        <h2>Уровень 1: задачи 1–4 <span class="stars">⭐</span></h2>
+      </div>
+      <span class="level-badge">Разминка: вывод текста, переменные, ввод</span>
+      <div class="tasks">
+
+        <!-- ЗАДАЧА 1 -->
+        <article class="task" id="task-1">
+          <div class="task-head"><span class="task-num">1</span><h4>«Привет, Go!» <span class="stars">⭐</span></h4></div>
+          <p class="task-text">Выведи на экран строку <span class="chip go">Привет, мир!</span>, а на следующей строке — своё имя. В Python это были бы два <span class="chip py">print()</span>. В Go — два <span class="chip go">fmt.Println()</span>.</p>
+          <div class="reveal">
+            <button class="reveal-toggle" type="button">💡 Показать подсказку<span class="caret">▼</span></button>
+            <div class="reveal-body"><div class="reveal-inner">
+              <p>Скопируй каркас из <span class="chip go">hello.go</span> (package, import, func main) и просто добавь вторую строку <span class="chip go">fmt.Println(...)</span> под первой. Текст пиши в двойных кавычках.</p>
+            </div></div>
+          </div>
+          <div class="reveal">
+            <button class="reveal-toggle sol" type="button">✅ Показать решение<span class="caret">▼</span></button>
+            <div class="reveal-body"><div class="reveal-inner">
+              <div class="code-block lang-go">
+                <div class="code-head"><span class="lang-label">Go · task1.go</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+                <pre><span class="kw">package</span> main
+
+<span class="kw">import</span> <span class="str">"fmt"</span>
+
+<span class="kw">func</span> <span class="fn">main</span>() {
+    <span class="com">// первая строка — приветствие</span>
+    fmt.<span class="fn">Println</span>(<span class="str">"Привет, мир!"</span>)
+    <span class="com">// вторая строка — моё имя (замени на своё!)</span>
+    fmt.<span class="fn">Println</span>(<span class="str">"Меня зовут Аня"</span>)
+}</pre>
+              </div>
+            </div></div>
+          </div>
+        </article>
+
+        <!-- ЗАДАЧА 2 -->
+        <article class="task" id="task-2">
+          <div class="task-head"><span class="task-num">2</span><h4>«Сумма двух чисел» <span class="stars">⭐</span></h4></div>
+          <p class="task-text">Создай две переменные с числами (например 7 и 5), посчитай их сумму в третьей переменной и выведи результат на экран.</p>
+          <div class="reveal">
+            <button class="reveal-toggle" type="button">💡 Показать подсказку<span class="caret">▼</span></button>
+            <div class="reveal-body"><div class="reveal-inner">
+              <p>Переменную создаём через <span class="chip go">:=</span> — например <span class="chip go">a := 7</span>. Go сам поймёт, что это целое число (<span class="typ">int</span>). Сумма: <span class="chip go">sum := a + b</span>.</p>
+            </div></div>
+          </div>
+          <div class="reveal">
+            <button class="reveal-toggle sol" type="button">✅ Показать решение<span class="caret">▼</span></button>
+            <div class="reveal-body"><div class="reveal-inner">
+              <div class="code-block lang-go">
+                <div class="code-head"><span class="lang-label">Go · task2.go</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+                <pre><span class="kw">package</span> main
+
+<span class="kw">import</span> <span class="str">"fmt"</span>
+
+<span class="kw">func</span> <span class="fn">main</span>() {
+    a := <span class="num">7</span>        <span class="com">// первое число</span>
+    b := <span class="num">5</span>        <span class="com">// второе число</span>
+    sum := a + b  <span class="com">// сумма</span>
+
+    fmt.<span class="fn">Println</span>(<span class="str">"Сумма:"</span>, sum) <span class="com">// выведет: Сумма: 12</span>
+}</pre>
+              </div>
+            </div></div>
+          </div>
+        </article>
+
+        <!-- ЗАДАЧА 3 -->
+        <article class="task" id="task-3">
+          <div class="task-head"><span class="task-num">3</span><h4>«Привет, пользователь» <span class="stars">⭐</span></h4></div>
+          <p class="task-text">Спроси у пользователя имя, считай его через <span class="chip go">fmt.Scanln</span> и поздоровайся лично: <span class="chip go">Привет, Маша!</span></p>
+          <div class="reveal">
+            <button class="reveal-toggle" type="button">💡 Показать подсказку<span class="caret">▼</span></button>
+            <div class="reveal-body"><div class="reveal-inner">
+              <p>Сначала объяви переменную: <span class="chip go"><span class="kw">var</span> name <span class="typ">string</span></span>. Потом считай ответ: <span class="chip go">fmt.Scanln(&amp;name)</span>. Знак <span class="chip go">&amp;</span> обязателен — он говорит «вот адрес, куда положить ответ».</p>
+            </div></div>
+          </div>
+          <div class="reveal">
+            <button class="reveal-toggle sol" type="button">✅ Показать решение<span class="caret">▼</span></button>
+            <div class="reveal-body"><div class="reveal-inner">
+              <div class="code-block lang-go">
+                <div class="code-head"><span class="lang-label">Go · task3.go</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+                <pre><span class="kw">package</span> main
+
+<span class="kw">import</span> <span class="str">"fmt"</span>
+
+<span class="kw">func</span> <span class="fn">main</span>() {
+    <span class="kw">var</span> name <span class="typ">string</span> <span class="com">// пустая переменная для имени</span>
+
+    fmt.<span class="fn">Print</span>(<span class="str">"Как тебя зовут? "</span>)
+    fmt.<span class="fn">Scanln</span>(&amp;name) <span class="com">// ждём ответ пользователя</span>
+
+    fmt.<span class="fn">Println</span>(<span class="str">"Привет,"</span>, name+<span class="str">"!"</span>)
+}</pre>
+              </div>
+              <p class="muted" style="margin:12px 0 0"><small>Обрати внимание: <span class="chip go">fmt.Print</span> не переводит строку, а <span class="chip go">fmt.Println</span> — переводит. Знак <span class="chip go">+</span> склеивает две строки, как в Python.</small></p>
+            </div></div>
+          </div>
+        </article>
+
+        <!-- ЗАДАЧА 4 -->
+        <article class="task" id="task-4">
+          <div class="task-head"><span class="task-num">4</span><h4>«Квадрат числа» <span class="stars">⭐</span></h4></div>
+          <p class="task-text">Считай с клавиатуры целое число и выведи его квадрат (число, умноженное само на себя). Например: ввели 6 → получили 36.</p>
+          <div class="reveal">
+            <button class="reveal-toggle" type="button">💡 Показать подсказку<span class="caret">▼</span></button>
+            <div class="reveal-body"><div class="reveal-inner">
+              <p>Для целого числа объяви <span class="chip go"><span class="kw">var</span> n <span class="typ">int</span></span>, считай его через <span class="chip go">fmt.Scanln(&amp;n)</span>, а квадрат — это <span class="chip go">n * n</span>.</p>
+            </div></div>
+          </div>
+          <div class="reveal">
+            <button class="reveal-toggle sol" type="button">✅ Показать решение<span class="caret">▼</span></button>
+            <div class="reveal-body"><div class="reveal-inner">
+              <div class="code-block lang-go">
+                <div class="code-head"><span class="lang-label">Go · task4.go</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+                <pre><span class="kw">package</span> main
+
+<span class="kw">import</span> <span class="str">"fmt"</span>
+
+<span class="kw">func</span> <span class="fn">main</span>() {
+    <span class="kw">var</span> n <span class="typ">int</span>
+
+    fmt.<span class="fn">Print</span>(<span class="str">"Введи число: "</span>)
+    fmt.<span class="fn">Scanln</span>(&amp;n)
+
+    square := n * n <span class="com">// квадрат числа</span>
+    fmt.<span class="fn">Println</span>(<span class="str">"Квадрат числа"</span>, n, <span class="str">"="</span>, square)
+}</pre>
+              </div>
+            </div></div>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ========== СЛАЙД 14: УРОВЕНЬ 2 ========== -->
+    <section class="slide" data-title="Уровень 2">
+      <div class="slide-head">
+        <div class="kicker">Слайд 14 · Практика</div>
+        <h2>Уровень 2: задачи 5–8 <span class="stars">⭐⭐</span></h2>
+      </div>
+      <span class="level-badge">Условия, циклы и немного математики</span>
+      <div class="tasks">
+
+        <!-- ЗАДАЧА 5 -->
+        <article class="task" id="task-5">
+          <div class="task-head"><span class="task-num">5</span><h4>«Конвертер температур» <span class="stars">⭐⭐</span></h4></div>
+          <p class="task-text">Считай температуру в градусах Цельсия и переведи в Фаренгейты по формуле <strong>F = C × 1.8 + 32</strong>. Пример: ввели 36.6 → получили 97.88.</p>
+          <div class="reveal">
+            <button class="reveal-toggle" type="button">💡 Показать подсказку<span class="caret">▼</span></button>
+            <div class="reveal-body"><div class="reveal-inner">
+              <p>Температура бывает дробной, значит нужен тип <span class="chip go"><span class="typ">float64</span></span>, а не <span class="chip go"><span class="typ">int</span></span>. Объяви: <span class="chip go"><span class="kw">var</span> c <span class="typ">float64</span></span>, считай: <span class="chip go">fmt.Scanln(&amp;c)</span>. Важно писать <span class="chip go">1.8</span> через точку, а не запятую.</p>
+            </div></div>
+          </div>
+          <div class="reveal">
+            <button class="reveal-toggle sol" type="button">✅ Показать решение<span class="caret">▼</span></button>
+            <div class="reveal-body"><div class="reveal-inner">
+              <div class="code-block lang-go">
+                <div class="code-head"><span class="lang-label">Go · task5.go</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+                <pre><span class="kw">package</span> main
+
+<span class="kw">import</span> <span class="str">"fmt"</span>
+
+<span class="kw">func</span> <span class="fn">main</span>() {
+    <span class="kw">var</span> c <span class="typ">float64</span> <span class="com">// градусы Цельсия (дробные!)</span>
+
+    fmt.<span class="fn">Print</span>(<span class="str">"Введи градусы Цельсия: "</span>)
+    fmt.<span class="fn">Scanln</span>(&amp;c)
+
+    f := c*<span class="num">1.8</span> + <span class="num">32</span> <span class="com">// формула перевода</span>
+
+    fmt.<span class="fn">Println</span>(c, <span class="str">"°C ="</span>, f, <span class="str">"°F"</span>)
+}</pre>
+              </div>
+            </div></div>
+          </div>
+        </article>
+
+        <!-- ЗАДАЧА 6 -->
+        <article class="task" id="task-6">
+          <div class="task-head"><span class="task-num">6</span><h4>«Чёт или нечёт» <span class="stars">⭐⭐</span></h4></div>
+          <p class="task-text">Считай целое число и выведи <span class="chip go">чётное</span> или <span class="chip go">нечётное</span>. Используй <span class="chip go">if / else</span> и остаток от деления <span class="chip go">%</span>.</p>
+          <div class="reveal">
+            <button class="reveal-toggle" type="button">💡 Показать подсказку<span class="caret">▼</span></button>
+            <div class="reveal-body"><div class="reveal-inner">
+              <p>Если <span class="chip go">n % 2 == 0</span> — число делится на 2 без остатка, значит оно чётное. Обрати внимание: в Go условие пишется <strong>без круглых скобок</strong>, но обязательно с фигурными: <span class="chip go"><span class="kw">if</span> n%2 == 0 { ... }</span>.</p>
+            </div></div>
+          </div>
+          <div class="reveal">
+            <button class="reveal-toggle sol" type="button">✅ Показать решение<span class="caret">▼</span></button>
+            <div class="reveal-body"><div class="reveal-inner">
+              <div class="code-block lang-go">
+                <div class="code-head"><span class="lang-label">Go · task6.go</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+                <pre><span class="kw">package</span> main
+
+<span class="kw">import</span> <span class="str">"fmt"</span>
+
+<span class="kw">func</span> <span class="fn">main</span>() {
+    <span class="kw">var</span> n <span class="typ">int</span>
+
+    fmt.<span class="fn">Print</span>(<span class="str">"Введи число: "</span>)
+    fmt.<span class="fn">Scanln</span>(&amp;n)
+
+    <span class="kw">if</span> n%<span class="num">2</span> == <span class="num">0</span> {
+        fmt.<span class="fn">Println</span>(<span class="str">"чётное"</span>)
+    } <span class="kw">else</span> {
+        fmt.<span class="fn">Println</span>(<span class="str">"нечётное"</span>)
+    }
+}</pre>
+              </div>
+            </div></div>
+          </div>
+        </article>
+
+        <!-- ЗАДАЧА 7 -->
+        <article class="task" id="task-7">
+          <div class="task-head"><span class="task-num">7</span><h4>«Таблица умножения» <span class="stars">⭐⭐</span></h4></div>
+          <p class="task-text">Сначала выведи таблицу умножения для числа <strong>7</strong> (7×1=7, 7×2=14 … 7×10=70). Потом улучши программу: пусть число вводит пользователь.</p>
+          <div class="reveal">
+            <button class="reveal-toggle" type="button">💡 Показать подсказку<span class="caret">▼</span></button>
+            <div class="reveal-body"><div class="reveal-inner">
+              <p>Цикл выглядит так: <span class="chip go"><span class="kw">for</span> i := 1; i &lt;= 10; i++ { ... }</span>. Три части через точку с запятой: старт, условие продолжения, шаг. Внутри печатай <span class="chip go">n * i</span>.</p>
+            </div></div>
+          </div>
+          <div class="reveal">
+            <button class="reveal-toggle sol" type="button">✅ Показать решение<span class="caret">▼</span></button>
+            <div class="reveal-body"><div class="reveal-inner">
+              <div class="code-block lang-go">
+                <div class="code-head"><span class="lang-label">Go · task7.go</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+                <pre><span class="kw">package</span> main
+
+<span class="kw">import</span> <span class="str">"fmt"</span>
+
+<span class="kw">func</span> <span class="fn">main</span>() {
+    <span class="kw">var</span> n <span class="typ">int</span>
+    fmt.<span class="fn">Print</span>(<span class="str">"Для какого числа таблица? "</span>)
+    fmt.<span class="fn">Scanln</span>(&amp;n)
+
+    <span class="com">// цикл от 1 до 10 включительно</span>
+    <span class="kw">for</span> i := <span class="num">1</span>; i &lt;= <span class="num">10</span>; i++ {
+        fmt.<span class="fn">Println</span>(n, <span class="str">"x"</span>, i, <span class="str">"="</span>, n*i)
+    }
+
+    <span class="com">// а вот та же таблица для 7, без ввода с клавиатуры:</span>
+    <span class="kw">for</span> i := <span class="num">1</span>; i &lt;= <span class="num">10</span>; i++ {
+        fmt.<span class="fn">Println</span>(<span class="num">7</span>, <span class="str">"x"</span>, i, <span class="str">"="</span>, <span class="num">7</span>*i)
+    }
+}</pre>
+              </div>
+            </div></div>
+          </div>
+        </article>
+
+        <!-- ЗАДАЧА 8 -->
+        <article class="task" id="task-8">
+          <div class="task-head"><span class="task-num">8</span><h4>«Средний балл» <span class="stars">⭐⭐</span></h4></div>
+          <p class="task-text">Считай три оценки (например 4, 5, 4) и выведи средний балл. Вспомни про <strong>целочисленное деление</strong> — иначе вместо 4.33 ты получишь 4!</p>
+          <div class="reveal">
+            <button class="reveal-toggle" type="button">💡 Показать подсказку<span class="caret">▼</span></button>
+            <div class="reveal-body"><div class="reveal-inner">
+              <p>Если делить <span class="typ">int</span> на <span class="typ">int</span>, Go отбрасывает дробную часть. Чтобы получить дробный ответ, преврати сумму в <span class="typ">float64</span>: <span class="chip go"><span class="typ">float64</span>(sum) / <span class="num">3</span></span>. Три числа можно считать одной командой: <span class="chip go">fmt.Scanln(&amp;a, &amp;b, &amp;c)</span>.</p>
+            </div></div>
+          </div>
+          <div class="reveal">
+            <button class="reveal-toggle sol" type="button">✅ Показать решение<span class="caret">▼</span></button>
+            <div class="reveal-body"><div class="reveal-inner">
+              <div class="code-block lang-go">
+                <div class="code-head"><span class="lang-label">Go · task8.go</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+                <pre><span class="kw">package</span> main
+
+<span class="kw">import</span> <span class="str">"fmt"</span>
+
+<span class="kw">func</span> <span class="fn">main</span>() {
+    <span class="kw">var</span> a, b, c <span class="typ">int</span> <span class="com">// три оценки сразу</span>
+
+    fmt.<span class="fn">Print</span>(<span class="str">"Введи три оценки через пробел: "</span>)
+    fmt.<span class="fn">Scanln</span>(&amp;a, &amp;b, &amp;c)
+
+    sum := a + b + c
+    <span class="com">// ВАЖНО: превращаем целое в дробное,</span>
+    <span class="com">// иначе (4+5+4)/3 дало бы 4, а не 4.33</span>
+    avg := <span class="typ">float64</span>(sum) / <span class="num">3</span>
+
+    fmt.<span class="fn">Println</span>(<span class="str">"Сумма:"</span>, sum)
+    fmt.<span class="fn">Println</span>(<span class="str">"Средний балл:"</span>, avg)
+}</pre>
+              </div>
+            </div></div>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ========== СЛАЙД 15: УРОВЕНЬ 3 ========== -->
+    <section class="slide" data-title="Уровень 3">
+      <div class="slide-head">
+        <div class="kicker">Слайд 15 · Практика</div>
+        <h2>Уровень 3: задачи 9–12 <span class="stars">⭐⭐⭐</span></h2>
+      </div>
+      <span class="level-badge">Логика, строки, switch и bufio</span>
+      <div class="tasks">
+
+        <!-- ЗАДАЧА 9 -->
+        <article class="task" id="task-9">
+          <div class="task-head"><span class="task-num">9</span><h4>«FizzBuzz» <span class="stars">⭐⭐⭐</span></h4></div>
+          <p class="task-text">Выведи числа от 1 до 20, но: если число делится на 3 — печатай <span class="chip go">Fizz</span>, если на 5 — <span class="chip go">Buzz</span>, а если и на 3, и на 5 — <span class="chip go">FizzBuzz</span>. Это самая известная задача на собеседованиях!</p>
+          <div class="reveal">
+            <button class="reveal-toggle" type="button">💡 Показать подсказку<span class="caret">▼</span></button>
+            <div class="reveal-body"><div class="reveal-inner">
+              <p>«И» по-гошному — <span class="chip go">&amp;&amp;</span>. Порядок проверок важен: сначала проверяй <strong>оба</strong> делителя (FizzBuzz), и только потом по одному. Иначе до FizzBuzz дело никогда не дойдёт.</p>
+            </div></div>
+          </div>
+          <div class="reveal">
+            <button class="reveal-toggle sol" type="button">✅ Показать решение<span class="caret">▼</span></button>
+            <div class="reveal-body"><div class="reveal-inner">
+              <div class="code-block lang-go">
+                <div class="code-head"><span class="lang-label">Go · task9.go</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+                <pre><span class="kw">package</span> main
+
+<span class="kw">import</span> <span class="str">"fmt"</span>
+
+<span class="kw">func</span> <span class="fn">main</span>() {
+    <span class="kw">for</span> i := <span class="num">1</span>; i &lt;= <span class="num">20</span>; i++ {
+        <span class="kw">if</span> i%<span class="num">3</span> == <span class="num">0</span> &amp;&amp; i%<span class="num">5</span> == <span class="num">0</span> {
+            fmt.<span class="fn">Println</span>(<span class="str">"FizzBuzz"</span>) <span class="com">// делится и на 3, и на 5</span>
+        } <span class="kw">else if</span> i%<span class="num">3</span> == <span class="num">0</span> {
+            fmt.<span class="fn">Println</span>(<span class="str">"Fizz"</span>)
+        } <span class="kw">else if</span> i%<span class="num">5</span> == <span class="num">0</span> {
+            fmt.<span class="fn">Println</span>(<span class="str">"Buzz"</span>)
+        } <span class="kw">else</span> {
+            fmt.<span class="fn">Println</span>(i) <span class="com">// обычное число</span>
+        }
+    }
+}</pre>
+              </div>
+            </div></div>
+          </div>
+        </article>
+
+        <!-- ЗАДАЧА 10 -->
+        <article class="task" id="task-10">
+          <div class="task-head"><span class="task-num">10</span><h4>«Угадай число» <span class="stars">⭐⭐⭐</span></h4></div>
+          <p class="task-text">Загадай число константой (например 42). Пользователь вводит свои попытки, а программа подсказывает «Моё число БОЛЬШЕ» или «МЕНЬШЕ», пока он не угадает. В конце покажи количество попыток. Для ввода используй <span class="chip go">bufio</span>.</p>
+          <div class="reveal">
+            <button class="reveal-toggle" type="button">💡 Показать подсказку<span class="caret">▼</span></button>
+            <div class="reveal-body"><div class="reveal-inner">
+              <p>Константа: <span class="chip go"><span class="kw">const</span> secret = <span class="num">42</span></span>. Бесконечный цикл: <span class="chip go"><span class="kw">for</span> { ... }</span>, а выход из него — <span class="chip go"><span class="kw">break</span></span>. Строку в число превращает <span class="chip go">strconv.Atoi</span>, а <span class="chip go">strings.TrimSpace</span> убирает лишний Enter в конце.</p>
+            </div></div>
+          </div>
+          <div class="reveal">
+            <button class="reveal-toggle sol" type="button">✅ Показать решение<span class="caret">▼</span></button>
+            <div class="reveal-body"><div class="reveal-inner">
+              <div class="code-block lang-go">
+                <div class="code-head"><span class="lang-label">Go · task10.go</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+                <pre><span class="kw">package</span> main
+
+<span class="kw">import</span> (
+    <span class="str">"bufio"</span>
+    <span class="str">"fmt"</span>
+    <span class="str">"os"</span>
+    <span class="str">"strconv"</span>
+    <span class="str">"strings"</span>
+)
+
+<span class="kw">func</span> <span class="fn">main</span>() {
+    <span class="kw">const</span> secret = <span class="num">42</span> <span class="com">// загаданное число</span>
+    attempts := <span class="num">0</span>      <span class="com">// счётчик попыток</span>
+
+    reader := bufio.<span class="fn">NewReader</span>(os.Stdin)
+
+    fmt.<span class="fn">Println</span>(<span class="str">"Я загадал число от 1 до 100. Угадай!"</span>)
+
+    <span class="kw">for</span> { <span class="com">// бесконечный цикл, выйдем через break</span>
+        fmt.<span class="fn">Print</span>(<span class="str">"Твоя попытка: "</span>)
+        line, _ := reader.<span class="fn">ReadString</span>(<span class="str">'\n'</span>) <span class="com">// читаем строку до Enter</span>
+        line = strings.<span class="fn">TrimSpace</span>(line)
+
+        n, err := strconv.<span class="fn">Atoi</span>(line) <span class="com">// строку -&gt; в число</span>
+        <span class="kw">if</span> err != <span class="kw2">nil</span> {
+            fmt.<span class="fn">Println</span>(<span class="str">"Это не число, попробуй ещё раз!"</span>)
+            <span class="kw2">continue</span>
+        }
+
+        attempts++
+
+        <span class="kw">if</span> n &lt; secret {
+            fmt.<span class="fn">Println</span>(<span class="str">"Моё число БОЛЬШЕ"</span>)
+        } <span class="kw">else if</span> n &gt; secret {
+            fmt.<span class="fn">Println</span>(<span class="str">"Моё число МЕНЬШЕ"</span>)
+        } <span class="kw">else</span> {
+            fmt.<span class="fn">Println</span>(<span class="str">"Ура! Угадал за"</span>, attempts, <span class="str">"попыток(и)"</span>)
+            <span class="kw2">break</span> <span class="com">// выходим из цикла</span>
+        }
+    }
+}</pre>
+              </div>
+              <p class="muted" style="margin:12px 0 0"><small><span class="chip go">line, _ := ...</span> — знак <span class="chip go">_</span> означает «второй ответ функции мне не нужен, выбрось его».</small></p>
+            </div></div>
+          </div>
+        </article>
+
+        <!-- ЗАДАЧА 11 -->
+        <article class="task" id="task-11">
+          <div class="task-head"><span class="task-num">11</span><h4>«Перевёртыш» <span class="stars">⭐⭐⭐</span></h4></div>
+          <p class="task-text">Считай слово и выведи его задом наперёд: <span class="chip go">кот</span> → <span class="chip go">ток</span>. Сделай так, чтобы русские буквы не ломались (для этого нужен слайс рун).</p>
+          <div class="reveal">
+            <button class="reveal-toggle" type="button">💡 Показать подсказку<span class="caret">¶</span></button>
+            <div class="reveal-body"><div class="reveal-inner">
+              <p>Строку можно превратить в список букв: <span class="chip go">runes := []rune(word)</span>. Дальше иди циклом <strong>с конца в начало</strong>: <span class="chip go"><span class="kw">for</span> i := len(runes) - 1; i &gt;= 0; i--</span>. Длину узнаёт функция <span class="chip go">len()</span>.</p>
+            </div></div>
+          </div>
+          <div class="reveal">
+            <button class="reveal-toggle sol" type="button">✅ Показать решение<span class="caret">▼</span></button>
+            <div class="reveal-body"><div class="reveal-inner">
+              <div class="code-block lang-go">
+                <div class="code-head"><span class="lang-label">Go · task11.go</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+                <pre><span class="kw">package</span> main
+
+<span class="kw">import</span> (
+    <span class="str">"bufio"</span>
+    <span class="str">"fmt"</span>
+    <span class="str">"os"</span>
+    <span class="str">"strings"</span>
+)
+
+<span class="kw">func</span> <span class="fn">main</span>() {
+    reader := bufio.<span class="fn">NewReader</span>(os.Stdin)
+
+    fmt.<span class="fn">Print</span>(<span class="str">"Введи слово: "</span>)
+    word, _ := reader.<span class="fn">ReadString</span>(<span class="str">'\n'</span>)
+    word = strings.<span class="fn">TrimSpace</span>(word) <span class="com">// убираем Enter и пробелы по краям</span>
+
+    <span class="com">// превращаем строку в слайс рун,</span>
+    <span class="com">// чтобы кириллица не распалась на байты</span>
+    runes := []<span class="typ">rune</span>(word)
+    reversed := <span class="str">""</span>
+
+    <span class="kw">for</span> i := <span class="fn">len</span>(runes) - <span class="num">1</span>; i &gt;= <span class="num">0</span>; i-- {
+        reversed += <span class="typ">string</span>(runes[i]) <span class="com">// приклеиваем буквы с конца</span>
+    }
+
+    fmt.<span class="fn">Println</span>(<span class="str">"Наоборот:"</span>, reversed)
+}</pre>
+              </div>
+              <p class="muted" style="margin:12px 0 0"><small>Есть и короткий вариант для любопытных: <span class="chip go"><span class="kw">for</span> _, ch := <span class="kw">range</span> word { reversed = <span class="typ">string</span>(ch) + reversed }</span> — здесь каждая новая буква приклеивается <em>спереди</em>.</small></p>
+            </div></div>
+          </div>
+        </article>
+
+        <!-- ЗАДАЧА 12 -->
+        <article class="task" id="task-12">
+          <div class="task-head"><span class="task-num">12</span><h4>«Калькулятор» <span class="stars">⭐⭐⭐</span></h4></div>
+          <p class="task-text">Считай два числа и знак операции (<span class="chip go">+</span>, <span class="chip go">-</span>, <span class="chip go">*</span>, <span class="chip go">/</span>). Выполни действие через <span class="chip go">switch</span>. Если пользователь делит на ноль — вежливо сообщи об ошибке, а не «урони» программу.</p>
+          <div class="reveal">
+            <button class="reveal-toggle" type="button">💡 Показать подсказку<span class="caret">▼</span></button>
+            <div class="reveal-body"><div class="reveal-inner">
+              <p><span class="chip go">switch</span> — это как <span class="chip py">if / elif / elif</span>, только аккуратнее: <span class="chip go"><span class="kw">switch</span> op { <span class="kw">case</span> <span class="str">"+"</span>: ... <span class="kw">default</span>: ... }</span>. Числа объяви как <span class="typ">float64</span>, чтобы деление было дробным. Проверку на ноль делай <strong>внутри</strong> ветки <span class="chip go">"/"</span>.</p>
+            </div></div>
+          </div>
+          <div class="reveal">
+            <button class="reveal-toggle sol" type="button">✅ Показать решение<span class="caret">▼</span></button>
+            <div class="reveal-body"><div class="reveal-inner">
+              <div class="code-block lang-go">
+                <div class="code-head"><span class="lang-label">Go · task12.go</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+                <pre><span class="kw">package</span> main
+
+<span class="kw">import</span> <span class="str">"fmt"</span>
+
+<span class="kw">func</span> <span class="fn">main</span>() {
+    <span class="kw">var</span> a, b <span class="typ">float64</span> <span class="com">// числа могут быть дробными</span>
+    <span class="kw">var</span> op <span class="typ">string</span>    <span class="com">// знак операции</span>
+
+    fmt.<span class="fn">Print</span>(<span class="str">"Первое число: "</span>)
+    fmt.<span class="fn">Scanln</span>(&amp;a)
+
+    fmt.<span class="fn">Print</span>(<span class="str">"Знак операции (+ - * /): "</span>)
+    fmt.<span class="fn">Scanln</span>(&amp;op)
+
+    fmt.<span class="fn">Print</span>(<span class="str">"Второе число: "</span>)
+    fmt.<span class="fn">Scanln</span>(&amp;b)
+
+    <span class="kw">switch</span> op {
+    <span class="kw">case</span> <span class="str">"+"</span>:
+        fmt.<span class="fn">Println</span>(<span class="str">"Ответ:"</span>, a+b)
+    <span class="kw">case</span> <span class="str">"-"</span>:
+        fmt.<span class="fn">Println</span>(<span class="str">"Ответ:"</span>, a-b)
+    <span class="kw">case</span> <span class="str">"*"</span>:
+        fmt.<span class="fn">Println</span>(<span class="str">"Ответ:"</span>, a*b)
+    <span class="kw">case</span> <span class="str">"/"</span>:
+        <span class="kw">if</span> b == <span class="num">0</span> {
+            fmt.<span class="fn">Println</span>(<span class="str">"Ошибка: на ноль делить нельзя!"</span>)
+        } <span class="kw">else</span> {
+            fmt.<span class="fn">Println</span>(<span class="str">"Ответ:"</span>, a/b)
+        }
+    <span class="kw">default</span>:
+        fmt.<span class="fn">Println</span>(<span class="str">"Не знаю такой операции!"</span>)
+    }
+}</pre>
+              </div>
+            </div></div>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ========== СЛАЙД 16: ВИКТОРИНА ========== -->
+    <section class="slide" data-title="Викторина">
+      <div class="slide-head">
+        <div class="kicker">Слайд 16 · Мини-викторина</div>
+        <h2>Мини-викторина: проверь себя</h2>
+      </div>
+      <p>Три вопроса по пройденному. Нажимай на вариант ответа: правильный позеленеет, а неверный покраснеет и объяснит, почему.</p>
+
+      <div class="quiz" data-hint="Вспомни слайд 7: файл .exe создаёт команда go build.">
+        <div class="quiz-q">1. Какая команда создаёт готовый файл <span class="chip go">.exe</span>?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" type="button" data-correct="0">go run hello.go</button>
+          <button class="quiz-opt" type="button" data-correct="1" data-why="go build компилирует программу и оставляет рядом исполняемый файл.">go build hello.go</button>
+          <button class="quiz-opt" type="button" data-correct="0">go fmt hello.go</button>
+          <button class="quiz-opt" type="button" data-correct="0">go version</button>
+        </div>
+        <div class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz" data-hint="В Go короткое объявление переменной делается через := — тип компилятор определит сам.">
+        <div class="quiz-q">2. Как в Go объявить переменную и сразу задать ей значение?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" type="button" data-correct="0">x == 5</button>
+          <button class="quiz-opt" type="button" data-correct="0">let x = 5</button>
+          <button class="quiz-opt" type="button" data-correct="1" data-why="Оператор := — это «создай переменную и положи в неё значение».">x := 5</button>
+          <button class="quiz-opt" type="button" data-correct="0">var x &lt;- 5</button>
+        </div>
+        <div class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz" data-hint="Go строг: объявил переменную — будь добр использовать её, иначе программа не соберётся.">
+        <div class="quiz-q">3. Что произойдёт, если объявить переменную и ни разу её не использовать?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" type="button" data-correct="0">Ничего, программа запустится</button>
+          <button class="quiz-opt" type="button" data-correct="1" data-why="Компилятор выдаст «declared and not used» и не соберёт программу. В Python такое прощается, в Go — нет.">Ошибка компиляции, программа не запустится</button>
+          <button class="quiz-opt" type="button" data-correct="0">Переменная удалится сама</button>
+          <button class="quiz-opt" type="button" data-correct="0">Go попросит подтвердить удаление</button>
+        </div>
+        <div class="quiz-feedback"></div>
+      </div>
+
+      <div class="note check">
+        <span class="note-title">🏆 Если все три ответа зелёные</span>
+        <p>Ты официально понял эту презентацию! Осталось только повторить всё руками на своём компьютере.</p>
+      </div>
+    </section>
+
+    <!-- ========== СЛАЙД 17: ПРОЕКТ ========== -->
+    <section class="slide" data-title="Мини-проект">
+      <div class="slide-head">
+        <div class="kicker">Слайд 17 · Домашнее задание</div>
+        <h2>Мини-проект: «Программа с меню»</h2>
+      </div>
+      <p>Собери всё, что узнал, в одну программу. Она должна показывать <strong>меню</strong>, считывать выбор пользователя и выполнять нужное действие, а потом снова показывать меню — пока пользователь не выберет «выход».</p>
+      <div class="cards">
+        <div class="card"><span class="emoji">1️⃣</span><h3>Сложение</h3><p>Пользователь вводит два числа через пробел, программа печатает сумму.</p></div>
+        <div class="card"><span class="emoji">2️⃣</span><h3>Таблица умножения</h3><p>Пользователь вводит число, программа печатает таблицу для него.</p></div>
+        <div class="card"><span class="emoji">3️⃣</span><h3>Выход</h3><p>Программа прощается и завершается.</p></div>
+      </div>
+      <div class="note">
+        <span class="note-title">🧰 Какие инструменты понадобятся</span>
+        <p><span class="chip go">for { ... }</span> — бесконечное меню · <span class="chip go">switch</span> — выбор пункта · <span class="chip go">bufio</span> — ввод строк · <span class="chip go">strings.Fields</span> — разделить «5 7» на два числа · <span class="chip go">strconv.Atoi</span> — строка в число · <span class="chip go">return</span> — выйти из <span class="chip go">main</span>.</p>
+      </div>
+
+      <div class="reveal">
+        <button class="reveal-toggle" type="button">💡 Показать подсказку<span class="caret">▼</span></button>
+        <div class="reveal-body"><div class="reveal-inner">
+          <p>Создай <span class="chip go">reader := bufio.NewReader(os.Stdin)</span> один раз в начале и используй его для всех вводов. Внутри <span class="chip go">switch</span> команда <span class="chip go">continue</span> вернёт тебя к началу цикла (меню покажется снова), а <span class="chip go">return</span> завершит программу.</p>
+        </div></div>
+      </div>
+
+      <div class="reveal">
+        <button class="reveal-toggle sol" type="button">✅ Показать решение<span class="caret">▼</span></button>
+        <div class="reveal-body"><div class="reveal-inner">
+          <div class="code-block lang-go">
+            <div class="code-head"><span class="lang-label">Go · menu.go</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+            <pre><span class="kw">package</span> main
+
+<span class="kw">import</span> (
+    <span class="str">"bufio"</span>
+    <span class="str">"fmt"</span>
+    <span class="str">"os"</span>
+    <span class="str">"strconv"</span>
+    <span class="str">"strings"</span>
+)
+
+<span class="kw">func</span> <span class="fn">main</span>() {
+    reader := bufio.<span class="fn">NewReader</span>(os.Stdin) <span class="com">// один «слухач» на всю программу</span>
+
+    <span class="kw">for</span> {
+        fmt.<span class="fn">Println</span>(<span class="str">"\n=== МЕНЮ ==="</span>)
+        fmt.<span class="fn">Println</span>(<span class="str">"1 - сложение двух чисел"</span>)
+        fmt.<span class="fn">Println</span>(<span class="str">"2 - таблица умножения"</span>)
+        fmt.<span class="fn">Println</span>(<span class="str">"3 - выход"</span>)
+        fmt.<span class="fn">Print</span>(<span class="str">"Выбери пункт: "</span>)
+
+        line, _ := reader.<span class="fn">ReadString</span>(<span class="str">'\n'</span>)
+        choice := strings.<span class="fn">TrimSpace</span>(line)
+
+        <span class="kw">switch</span> choice {
+        <span class="kw">case</span> <span class="str">"1"</span>:
+            fmt.<span class="fn">Print</span>(<span class="str">"Введи два числа через пробел: "</span>)
+            line, _ = reader.<span class="fn">ReadString</span>(<span class="str">'\n'</span>)
+            parts := strings.<span class="fn">Fields</span>(strings.<span class="fn">TrimSpace</span>(line)) <span class="com">// "5 7" -&gt; ["5","7"]</span>
+
+            <span class="kw">if</span> <span class="fn">len</span>(parts) &lt; <span class="num">2</span> {
+                fmt.<span class="fn">Println</span>(<span class="str">"Нужно ввести два числа!"</span>)
+                <span class="kw2">continue</span> <span class="com">// возвращаемся к меню</span>
+            }
+
+            a, _ := strconv.<span class="fn">Atoi</span>(parts[<span class="num">0</span>])
+            b, _ := strconv.<span class="fn">Atoi</span>(parts[<span class="num">1</span>])
+            fmt.<span class="fn">Println</span>(<span class="str">"Сумма:"</span>, a+b)
+
+        <span class="kw">case</span> <span class="str">"2"</span>:
+            fmt.<span class="fn">Print</span>(<span class="str">"Для какого числа таблица? "</span>)
+            line, _ = reader.<span class="fn">ReadString</span>(<span class="str">'\n'</span>)
+            n, err := strconv.<span class="fn">Atoi</span>(strings.<span class="fn">TrimSpace</span>(line))
+            <span class="kw">if</span> err != <span class="kw2">nil</span> {
+                fmt.<span class="fn">Println</span>(<span class="str">"Это не число!"</span>)
+                <span class="kw2">continue</span>
+            }
+            <span class="kw">for</span> i := <span class="num">1</span>; i &lt;= <span class="num">10</span>; i++ {
+                fmt.<span class="fn">Println</span>(n, <span class="str">"x"</span>, i, <span class="str">"="</span>, n*i)
+            }
+
+        <span class="kw">case</span> <span class="str">"3"</span>:
+            fmt.<span class="fn">Println</span>(<span class="str">"Пока! Приходи ещё 👋"</span>)
+            <span class="kw2">return</span> <span class="com">// завершаем программу</span>
+
+        <span class="kw">default</span>:
+            fmt.<span class="fn">Println</span>(<span class="str">"Такого пункта нет, попробуй ещё раз"</span>)
+        }
+    }
+}</pre>
+          </div>
+          <div class="code-block term">
+            <div class="code-head"><span class="lang-label">Терминал · пример работы</span><button class="copy-btn" type="button">📋 Копировать</button></div>
+            <pre>C:\go-projects&gt; go run menu.go
+
+=== МЕНЮ ===
+1 - сложение двух чисел
+2 - таблица умножения
+3 - выход
+Выбери пункт: 2
+Для какого числа таблица? 7
+7 x 1 = 7
+7 x 2 = 14
+...</pre>
+          </div>
+        </div></div>
+      </div>
+
+      <div class="note analogy">
+        <span class="note-title">🚀 Задание со звёздочкой</span>
+        <p>Добавь в меню четвёртый пункт: игру «Угадай число» из задачи №10. Так ты соединишь две программы в одну — именно так и растут настоящие проекты.</p>
+      </div>
+    </section>
+
+    <!-- ========== СЛАЙД 18 ========== -->
+    <section class="slide" data-title="Итоги">
+      <div class="slide-head">
+        <div class="kicker">Слайд 18 · Итоги</div>
+        <h2>Итоги и что дальше</h2>
+      </div>
+
+      <h3>Чек-лист умений</h3>
+      <p class="check-counter" id="checkCounter">Отмечено: 0 из 6</p>
+      <div class="checklist" id="checklist">
+        <button class="check-item" type="button"><span class="box">✔</span><span>Я умею установить Go и проверить его командой <span class="chip go">go version</span></span></button>
+        <button class="check-item" type="button"><span class="box">✔</span><span>Я установил VS Code и расширение Go от Go Team at Google</span></button>
+        <button class="check-item" type="button"><span class="box">✔</span><span>Я умею написать <span class="chip go">hello.go</span> с <span class="chip go">package main</span> и <span class="chip go">func main()</span></span></button>
+        <button class="check-item" type="button"><span class="box">✔</span><span>Я запускаю программу командой <span class="chip go">go run</span></span></button>
+        <button class="check-item" type="button"><span class="box">✔</span><span>Я собираю <span class="chip go">.exe</span> командой <span class="chip go">go build</span></span></button>
+        <button class="check-item" type="button"><span class="box">✔</span><span>Я выравниваю код командой <span class="chip go">go fmt</span> (или Ctrl+S в VS Code)</span></button>
+      </div>
+
+      <div class="next-topic">
+        <h3 style="color:#4ec9b0">📚 Следующая тема: «Переменные и типы в Go»</h3>
+        <p style="margin-bottom:8px">Мы разберём:</p>
+        <ul style="margin-bottom:0">
+          <li>все основные типы: <span class="chip go">int</span>, <span class="chip go">float64</span>, <span class="chip go">string</span>, <span class="chip go">bool</span>, <span class="chip go">rune</span>;</li>
+          <li>чем <span class="chip go">:=</span> отличается от <span class="chip go">var x int = 5</span>;</li>
+          <li>почему <span class="chip go">7 / 2</span> в Go равно 3, и как получить 3.5;</li>
+          <li>константы <span class="chip go">const</span> и преобразования типов <span class="chip go">float64(x)</span>.</li>
+        </ul>
+      </div>
+
+      <div class="note check">
+        <span class="note-title">🎯 Домашнее задание до следующего урока</span>
+        <p>Реши задачи №9 (FizzBuzz) и №12 (Калькулятор) <strong>без подглядывания в решение</strong>, а потом собери калькулятор в <span class="chip go">.exe</span> командой <span class="chip go">go build</span> и отправь файл другу — пусть он запустит его на своём компьютере без Go.</p>
+      </div>
+
+      <div style="text-align:center;margin-top:26px">
+        <button class="btn-primary" type="button" id="restartBtn">Пройти презентацию заново 🔁</button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= НИЖНЯЯ ПАНЕЛЬ ================= -->
+  <footer class="navbar">
+    <div class="nav-row" style="display:contents">
+      <button class="nav-btn" id="prevBtn" type="button">← Назад</button>
+      <div class="dots" id="dots"></div>
+      <button class="nav-btn primary" id="nextBtn" type="button">Далее →</button>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- 1. НАВИГАЦИЯ ПО СЛАЙДАМ ---------- */
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var total = slides.length;
+  var current = 0;
+
+  var stage = document.getElementById('stage');
+  var progressText = document.getElementById('progressText');
+  var progressFill = document.getElementById('progressFill');
+  var dotsWrap = document.getElementById('dots');
+  var prevBtn = document.getElementById('prevBtn');
+  var nextBtn = document.getElementById('nextBtn');
+
+  // создаём точки-навигацию
+  slides.forEach(function (slideEl, idx) {
+    var dot = document.createElement('button');
+    dot.type = 'button';
+    dot.className = 'dot';
+    dot.title = 'Слайд ' + (idx + 1) + ': ' + (slideEl.dataset.title || '');
+    dot.setAttribute('aria-label', dot.title);
+    dot.addEventListener('click', function () { goTo(idx); });
+    dotsWrap.appendChild(dot);
+  });
+  var dots = Array.prototype.slice.call(dotsWrap.children);
+
+  function goTo(idx) {
+    if (idx < 0 || idx >= total) return;
+    slides[current].classList.remove('active');
+    current = idx;
+    slides[current].classList.add('active');
+    render();
+  }
+
+  function render() {
+    progressText.textContent = 'Слайд ' + (current + 1) + ' из ' + total;
+    progressFill.style.width = (((current + 1) / total) * 100) + '%';
+    dots.forEach(function (d, i) { d.classList.toggle('active', i === current); });
+    prevBtn.disabled = (current === 0);
+    nextBtn.disabled = (current === total - 1);
+    stage.scrollTop = 0;
+  }
+
+  prevBtn.addEventListener('click', function () { goTo(current - 1); });
+  nextBtn.addEventListener('click', function () { goTo(current + 1); });
+
+  document.addEventListener('keydown', function (ev) {
+    var tag = (ev.target && ev.target.tagName) ? ev.target.tagName.toLowerCase() : '';
+    if (tag === 'input' || tag === 'textarea') return;
+    if (ev.key === 'ArrowRight' || ev.key === 'PageDown') { ev.preventDefault(); goTo(current + 1); }
+    else if (ev.key === 'ArrowLeft' || ev.key === 'PageUp') { ev.preventDefault(); goTo(current - 1); }
+    else if (ev.key === 'Home') { ev.preventDefault(); goTo(0); }
+    else if (ev.key === 'End') { ev.preventDefault(); goTo(total - 1); }
+  });
+
+  // кнопка «Начать» и «Пройти заново»
+  var startBtn = document.getElementById('startBtn');
+  if (startBtn) startBtn.addEventListener('click', function () { goTo(1); });
+  var restartBtn = document.getElementById('restartBtn');
+  if (restartBtn) restartBtn.addEventListener('click', function () { goTo(0); });
+
+  // переходы по кнопкам data-goto (+ скролл к конкретной задаче)
+  document.querySelectorAll('[data-goto]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var target = parseInt(btn.dataset.goto, 10);
+      goTo(target);
+      var taskNumber = btn.dataset.task;
+      if (taskNumber) {
+        var card = document.getElementById('task-' + taskNumber);
+        if (card) {
+          setTimeout(function () { card.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 80);
+        }
+      }
+    });
+  });
+
+  /* ---------- 2. КОПИРОВАНИЕ КОДА ---------- */
+  function showCopied(btn) {
+    var original = btn.getAttribute('data-label') || btn.textContent;
+    btn.setAttribute('data-label', original);
+    btn.textContent = '✓ Скопировано';
+    btn.classList.add('copied');
+    setTimeout(function () {
+      btn.textContent = original;
+      btn.classList.remove('copied');
+    }, 2000);
+  }
+
+  function legacyCopy(text, onOk) {
+    var area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.top = '-9999px';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+    area.select();
+    area.setSelectionRange(0, area.value.length);
+    var done = false;
+    try { done = document.execCommand('copy'); } catch (err) { done = false; }
+    document.body.removeChild(area);
+    if (done && onOk) onOk();
+  }
+
+  function copyText(text, btn) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        showCopied(btn);
+      }, function () {
+        legacyCopy(text, function () { showCopied(btn); });
+      });
+    } else {
+      legacyCopy(text, function () { showCopied(btn); });
+    }
+  }
+
+  document.querySelectorAll('.code-block').forEach(function (block) {
+    var btn = block.querySelector('.copy-btn');
+    var pre = block.querySelector('pre');
+    if (!btn || !pre) return;
+    btn.setAttribute('data-label', btn.textContent);
+    btn.addEventListener('click', function () { copyText(pre.innerText, btn); });
+  });
+
+  /* ---------- 3. РАСКРЫВАЮЩИЕСЯ БЛОКИ ---------- */
+  document.querySelectorAll('.reveal-toggle').forEach(function (btn) {
+    var body = btn.parentElement.querySelector('.reveal-body');
+    if (!body) return;
+    btn.setAttribute('aria-expanded', 'false');
+    btn.addEventListener('click', function () {
+      var isOpen = body.classList.toggle('open');
+      btn.classList.toggle('open', isOpen);
+      btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      body.style.maxHeight = isOpen ? (body.scrollHeight + 40) + 'px' : '0px';
+    });
+  });
+
+  // пересчёт высоты открытых блоков при изменении размера окна
+  var resizeTimer = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      document.querySelectorAll('.reveal-body.open').forEach(function (body) {
+        body.style.maxHeight = (body.scrollHeight + 40) + 'px';
+      });
+    }, 150);
+  });
+
+  /* ---------- 4. ВИКТОРИНА ---------- */
+  document.querySelectorAll('.quiz').forEach(function (quiz) {
+    var options = Array.prototype.slice.call(quiz.querySelectorAll('.quiz-opt'));
+    var feedback = quiz.querySelector('.quiz-feedback');
+
+    options.forEach(function (opt) {
+      opt.addEventListener('click', function () {
+        if (opt.disabled) return;
+        if (opt.dataset.correct === '1') {
+          opt.classList.add('right');
+          options.forEach(function (o) { o.disabled = true; });
+          feedback.textContent = '✅ Верно! ' + (opt.dataset.why || '');
+          feedback.className = 'quiz-feedback show ok';
+        } else {
+          opt.classList.add('wrong');
+          opt.disabled = true;
+          feedback.textContent = '❌ Не совсем. ' + (quiz.dataset.hint || 'Попробуй другой вариант.');
+          feedback.className = 'quiz-feedback show bad';
+        }
+      });
+    });
+  });
+
+  /* ---------- 5. ЧЕК-ЛИСТ ---------- */
+  var checklist = document.getElementById('checklist');
+  var checkCounter = document.getElementById('checkCounter');
+  if (checklist) {
+    var items = Array.prototype.slice.call(checklist.querySelectorAll('.check-item'));
+    var updateCounter = function () {
+      var done = items.filter(function (it) { return it.classList.contains('checked'); }).length;
+      checkCounter.textContent = 'Отмечено: ' + done + ' из ' + items.length;
+    };
+    items.forEach(function (item) {
+      item.setAttribute('aria-pressed', 'false');
+      item.addEventListener('click', function () {
+        var checked = item.classList.toggle('checked');
+        item.setAttribute('aria-pressed', checked ? 'true' : 'false');
+        updateCounter();
+      });
+    });
+    updateCounter();
+  }
+
+  /* ---------- СТАРТ ---------- */
+  render();
+})();
+</script>
+</body>
+</html>
